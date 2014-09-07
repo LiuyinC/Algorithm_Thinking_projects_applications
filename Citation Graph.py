@@ -8,6 +8,7 @@ __author__ = 'liuyincheng'
 
 # general imports
 import urllib2
+import random
 
 
 # Set timeout for CodeSkulptor if necessary
@@ -19,7 +20,56 @@ import urllib2
 # Code for loading citation graph
 
 CITATION_URL = "http://storage.googleapis.com/codeskulptor-alg/alg_phys-cite.txt"
-NUM_NODES = 27770
+
+class DPATrial:
+    """
+    Simple class to encapsulate optimized trials for DPA algorithm
+
+    Maintains a list of node numbers with multiple instances of each number.
+    The number of instances of each node number are
+    in the same proportion as the desired probabilities
+
+    Uses random.choice() to select a node number from this list for each trial.
+    """
+
+    def __init__(self, num_nodes):
+        """
+        Initialize a DPATrial object corresponding to a
+        complete graph with num_nodes nodes
+
+        Note the initial list of node numbers has num_nodes copies of
+        each node number
+        """
+        self._num_nodes = num_nodes
+        self._node_numbers = [node for node in range(num_nodes) for dummy_idx in range(num_nodes)]
+
+
+    def run_trial(self, num_nodes):
+        """
+        Conduct num_node trials using by applying random.choice()
+        to the list of node numbers
+
+        Updates the list of node numbers so that the number of instances of
+        each node number is in the same ratio as the desired probabilities
+
+        Returns:
+        Set of nodes
+        """
+
+        # compute the neighbors for the newly-created node
+        new_node_neighbors = set()
+        for dummy_idx in range(num_nodes):
+            new_node_neighbors.add(random.choice(self._node_numbers))
+
+        # update the list of node numbers so that each node number
+        # appears in the correct ratio
+        self._node_numbers.append(self._num_nodes)
+        self._node_numbers.extend(list(new_node_neighbors))
+
+        #update the number of nodes
+        self._num_nodes += 1
+        return new_node_neighbors
+
 
 def load_graph(graph_url):
     """
@@ -92,13 +142,13 @@ def in_degree_distribution(digraph):
     return in_degree_dist
 
 
-def in_degrees_dist_plot(in_degrees_dist):
+def in_degrees_dist_plot(in_degrees_dist, num_nodes):
     import matplotlib.pylab as plt
     x_axis = []
     y_axis = []
     for node, degree in in_degrees_dist.items():
         if node != 0:
-            distribution = float(degree) / float(NUM_NODES)
+            distribution = float(degree) / float(num_nodes)
             x_axis.append(node)
             y_axis.append(distribution)
     plt.loglog(x_axis, y_axis, 'ro')
@@ -107,9 +157,58 @@ def in_degrees_dist_plot(in_degrees_dist):
     plt.title('In degrees Distribution (log/log Plot)')
     plt.show()
 
-citation_graph = load_graph(CITATION_URL)
+
+def ER_random_directed_graph(num_nodes, prob):
+    """
+    Randomly generate a directed graph, there is a directed edge from node i to node j with probability of p
+    :param num_nodes: number of nodes (int)
+    :param prob: probability that there is a edge from i to j, (float, range = [0, 1])
+    :return: a random directed graph dictionary
+    """
+    initial_nodes = range(num_nodes)
+    terminal_nodes = range(num_nodes)
+    random_graph = {}
+    for tail in initial_nodes:
+        out_nodes = set([])
+        for head in terminal_nodes:
+            if tail != head and random.random() <= prob:
+                out_nodes.add(head)
+        random_graph[tail] = out_nodes
+    return random_graph
+
+
+def DPA_random_directed_graph(final_num_nodes, initial_num_nodes):
+    """
+    The algorithm starts by creating a complete directed graph on m nodes.
+    Then, the algorithm grows the graph by adding n-m nodes, where each new node is connected to
+    m nodes randomly chosen from the set of existing nodes.
+    :param final_num_nodes :n
+    :param initial_num_nodes: m
+    :return: directed graph
+    """
+    digraph = make_complete_graph(initial_num_nodes)
+    tail = DPATrial(initial_num_nodes)
+    for node in range(initial_num_nodes, final_num_nodes):
+        neighbors = tail.run_trial(initial_num_nodes)
+        digraph[node] = neighbors
+    return digraph
 
 # Question 1, normalized citation in-degrees distribution plotting.
-citation_in_degrees_dist = in_degree_distribution(citation_graph)
-in_degrees_dist_plot(citation_in_degrees_dist)
+# citation_graph = load_graph(CITATION_URL)
+# citation_papers = 27770
+# citation_in_degrees_dist = in_degree_distribution(citation_graph)
+# in_degrees_dist_plot(citation_in_degrees_dist, citation_papers)
 
+# Question 2, using ER algorithm provided in homework to generate a random directed graph
+# and plot it.
+# num_nodes = 1000
+# random_graph = ER_random_directed_graph(num_nodes, 0.6)
+# random_in_degrees_dist = in_degree_distribution(random_graph)
+# in_degrees_dist_plot(random_in_degrees_dist, num_nodes)
+
+# Question 4, implement the DPA algorithm into the graph with almost size with citation graph.
+# final_nodes = 27770
+# initial_nodes = 13
+# DPA_digraph = DPA_random_directed_graph(final_nodes, initial_nodes)
+# DPA_in_degrees_dist = in_degree_distribution(DPA_digraph)
+# in_degrees_dist_plot(DPA_in_degrees_dist, final_nodes)
