@@ -11,9 +11,11 @@ __author__ = 'liuyincheng'
 
 import urllib2
 import random
+from collections import deque
 import time
 import math
 import matplotlib.pyplot as plt
+import matplotlib.lines
 
 NETWORK_URL = "http://storage.googleapis.com/codeskulptor-alg/alg_rf7.txt"
 
@@ -183,14 +185,98 @@ def UPA_graph(final_num, initial_num):
     return ugraph
 
 
+def random_order(ugraph):
+    """
+    Take a graph and return a list of the nodes in the graph in some random order
+    """
+    nodes = ugraph.keys()
+    random.seed(1)      # Set a random seed to guarantee the same results
+    random.shuffle(nodes)
+    return nodes
 
-# network_graph = load_graph(NETWORK_URL)
-# uer_graph = UER_graph(1347, 0.0034)
-# upa_graph = UPA_graph(1347, 2)
 
-# total = 0
-# for node in upa_graph:
-#     total += len(upa_graph[node])
-#     neighbors = upa_graph[node]
-# print total
-# print UER_graph(3, 0.5)
+def bfs_visited(ugraph, start_node):
+    """
+    Takes the undirected graph ugraph and the node start_node and returns the set consisting of
+    all nodes that are visited by a breadth-first search that starts at start_node.
+    """
+    visited_nodes = set([start_node])
+    queue = deque([start_node])
+    while len(queue) != 0:
+        tail = queue[0]
+        queue.popleft()
+        for head in ugraph[tail]:
+            if head not in visited_nodes:
+                visited_nodes.add(head)
+                queue.append(head)
+    return visited_nodes
+
+
+def cc_visited(ugraph):
+    """
+    Takes the undirected graph ugraph and returns a list of sets, where each set consists of
+    all the nodes (and nothing else) in a connected component, and there is exactly one set in
+    the list for each connected component in ugraph and nothing else.
+    """
+    connected_components = []
+    remaining_nodes = ugraph.keys()
+    while len(remaining_nodes) != 0:
+        tail = remaining_nodes[0]
+        heads = bfs_visited(ugraph, tail)
+        connected_components.append(heads)
+        for node in heads:
+            remaining_nodes.remove(node)
+    return connected_components
+
+
+def largest_cc_size(ugraph):
+    """
+    Takes the undirected graph ugraph and returns the size (an integer) of the largest
+    connected component in ugraph.
+    """
+    connected_components = cc_visited(ugraph)
+    if len(connected_components) == 0:
+        return 0
+    max_size = max(map(len, connected_components))
+    return max_size
+
+
+def compute_resilience(ugraph, attack_order):
+    """
+    Takes the undirected graph ugraph, a list of nodes attack_order and iterates through
+    the nodes in attack_order. For each node in the list, the function removes the given node
+    and its edges from the graph and then computes the size of the largest connected component
+    for the resulting graph.
+    """
+    original_max_cc = largest_cc_size(ugraph)
+    resilience = [original_max_cc]
+    for node in attack_order:
+        for head in ugraph[node]:       # Delete all edges
+            if node in ugraph[head]:
+                ugraph[head].remove(node)
+        ugraph.pop(node)     # Delete the node
+        max_cc = largest_cc_size(ugraph)
+        resilience.append(max_cc)
+    return resilience
+
+
+
+network_graph = load_graph(NETWORK_URL)
+uer_graph = UER_graph(1347, 0.0034)
+upa_graph = UPA_graph(1347, 2)
+
+
+# Question 1, plot the resilience for all these graph versus number of nodes removed.
+attack_order = random_order(uer_graph)
+x_value = range(len(attack_order) + 1)
+network_res = compute_resilience(network_graph, attack_order)
+uer_res = compute_resilience(uer_graph, attack_order)
+upa_res = compute_resilience(upa_graph, attack_order)
+plt.plot(network_res, x_value, 'bx', lw = 0, label = 'Network Graph')
+plt.plot(uer_res, x_value, 'rv', lw = 0, label='ER Graph (p = 0.0034)')
+plt.plot(upa_res, x_value, 'g+', lw = 0, label = 'UPA Graph (m = 2)')
+plt.xlabel('The number of nodes removed')
+plt.ylabel('Size of largest connected component after node removal')
+plt.title('The resilience of Network, ER and UPA Graphs')
+plt.legend()
+plt.show()
