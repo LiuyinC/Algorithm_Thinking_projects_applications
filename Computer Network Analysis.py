@@ -15,7 +15,6 @@ from collections import deque
 import time
 import math
 import matplotlib.pyplot as plt
-import matplotlib.lines
 
 NETWORK_URL = "http://storage.googleapis.com/codeskulptor-alg/alg_rf7.txt"
 
@@ -260,23 +259,81 @@ def compute_resilience(ugraph, attack_order):
     return resilience
 
 
+def fast_targeted_order(ugraph):
+    """
+    Quickly compute a targeted attack order consisting of nodes of maximal degree
+    """
+    num_nodes = len(ugraph)
+    order = []
+    degree_sets = [ set([]) for _i in range(num_nodes)]     # Initial an empty degree sets
+    for node in ugraph.keys():      # Create the degree_set
+        degree = len(ugraph[node])
+        degree_sets[degree].add(node)
+    for degree in range(num_nodes- 1, 0, -1):
+        while len(degree_sets[degree]) != 0:
+            tail = degree_sets[degree].pop()
+            for head in ugraph[tail]:
+                degree = len(ugraph[head])
+                degree_sets[degree].remove(head)
+                degree_sets[degree - 1].add(head)
+                ugraph[head].remove(tail)
+            ugraph.pop(tail)
+            order.append(tail)
+    order.extend(ugraph.keys())
+    return order
 
-network_graph = load_graph(NETWORK_URL)
-uer_graph = UER_graph(1347, 0.0034)
-upa_graph = UPA_graph(1347, 2)
+
+# test_graph = UER_graph(1000, 1)
+# # test_graph = UPA_graph(1000, 5)
+# time0 = time.time()
+# order1 = targeted_order(test_graph)
+# time1 = time.time()
+# order2 = fast_targeted_order(test_graph)
+# time2 = time.time()
+# print "target order time = ", time1- time0
+# print "faster target order time = ", time2 - time1
 
 
-# Question 1, plot the resilience for all these graph versus number of nodes removed.
-attack_order = random_order(uer_graph)
-x_value = range(len(attack_order) + 1)
-network_res = compute_resilience(network_graph, attack_order)
-uer_res = compute_resilience(uer_graph, attack_order)
-upa_res = compute_resilience(upa_graph, attack_order)
-plt.plot(network_res, x_value, 'bx', lw = 0, label = 'Network Graph')
-plt.plot(uer_res, x_value, 'rv', lw = 0, label='ER Graph (p = 0.0034)')
-plt.plot(upa_res, x_value, 'g+', lw = 0, label = 'UPA Graph (m = 2)')
-plt.xlabel('The number of nodes removed')
-plt.ylabel('Size of largest connected component after node removal')
-plt.title('The resilience of Network, ER and UPA Graphs')
-plt.legend()
-plt.show()
+# network_graph = load_graph(NETWORK_URL)
+# uer_graph = UER_graph(1347, 0.0034)
+# upa_graph = UPA_graph(1347, 2)
+#
+#
+# # Question 1, plot the resilience for all these graph versus number of nodes removed.
+# attack_order = random_order(uer_graph)
+# x_value = range(len(attack_order) + 1)
+# network_res = compute_resilience(network_graph, attack_order)
+# uer_res = compute_resilience(uer_graph, attack_order)
+# upa_res = compute_resilience(upa_graph, attack_order)
+# plt.grid()
+# plt.plot(x_value, network_res, '-b', lw = 2, label = 'Network Graph')
+# plt.plot(x_value, uer_res, '-r', lw = 2, label='ER Graph (p = 0.0034)')
+# plt.plot(x_value, upa_res, '-g', lw = 2, label = 'UPA Graph (m = 2)')
+# plt.xlabel('The number of nodes removed')
+# plt.ylabel('Size of largest connected component after node removal')
+# plt.title('The resilience of Network, ER and UPA Graphs')
+# plt.legend()
+# plt.show()
+
+# # Question 2, analyze the running time of these two methods on UPA graphs of size n with m=5.
+# slow_running_times = []
+# fast_running_times = []
+# for final_num in range(10, 1000, 10):
+#     upa_graph = UPA_graph(final_num, 5)
+#     time0 = time.time()
+#     slow_order = targeted_order(upa_graph)
+#     time1 = time.time()
+#     fast_order = fast_targeted_order(upa_graph)
+#     time2 = time.time()
+#     slow_running_times.append(time1 - time0)
+#     fast_running_times.append(time2 - time1)
+# print 'slow', slow_running_times
+# print 'fast', fast_running_times
+# plt.plot(range(10, 1000, 10), slow_running_times, 'r', lw = 2, label = 'Provided target order generation method')
+# plt.plot(range(10, 1000, 10), fast_running_times, 'g', lw = 2, label = 'Fast target order generation method')
+# plt.legend(loc = 'upper left')
+# plt.xlabel('Size of UPA graph n')
+# plt.ylabel('Running time (unit = second)')
+# plt.title('Comparison of Running time \n for generating target order from UPA graphs  (Desktop Python)')
+# plt.grid()
+# plt.show()
