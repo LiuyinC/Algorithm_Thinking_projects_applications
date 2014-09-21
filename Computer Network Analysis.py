@@ -247,14 +247,15 @@ def compute_resilience(ugraph, attack_order):
     and its edges from the graph and then computes the size of the largest connected component
     for the resulting graph.
     """
-    original_max_cc = largest_cc_size(ugraph)
+    temp_ugraph = copy_graph(ugraph)
+    original_max_cc = largest_cc_size(temp_ugraph)
     resilience = [original_max_cc]
     for node in attack_order:
-        for head in ugraph[node]:       # Delete all edges
-            if node in ugraph[head]:
-                ugraph[head].remove(node)
-        ugraph.pop(node)     # Delete the node
-        max_cc = largest_cc_size(ugraph)
+        for head in temp_ugraph[node]:       # Delete all edges
+            if node in temp_ugraph[head]:
+                temp_ugraph[head].remove(node)
+        temp_ugraph.pop(node)     # Delete the node
+        max_cc = largest_cc_size(temp_ugraph)
         resilience.append(max_cc)
     return resilience
 
@@ -263,23 +264,24 @@ def fast_targeted_order(ugraph):
     """
     Quickly compute a targeted attack order consisting of nodes of maximal degree
     """
-    num_nodes = len(ugraph)
+    temp_ugraph = copy_graph(ugraph)
+    num_nodes = len(temp_ugraph)
     order = []
     degree_sets = [ set([]) for _i in range(num_nodes)]     # Initial an empty degree sets
-    for node in ugraph.keys():      # Create the degree_set
-        degree = len(ugraph[node])
+    for node in temp_ugraph.keys():      # Create the degree_set
+        degree = len(temp_ugraph[node])
         degree_sets[degree].add(node)
     for degree in range(num_nodes- 1, 0, -1):
         while len(degree_sets[degree]) != 0:
             tail = degree_sets[degree].pop()
-            for head in ugraph[tail]:
-                degree = len(ugraph[head])
+            for head in temp_ugraph[tail]:
+                degree = len(temp_ugraph[head])
                 degree_sets[degree].remove(head)
                 degree_sets[degree - 1].add(head)
-                ugraph[head].remove(tail)
-            ugraph.pop(tail)
+                temp_ugraph[head].remove(tail)
+            temp_ugraph.pop(tail)
             order.append(tail)
-    order.extend(ugraph.keys())
+    order.extend(temp_ugraph.keys())
     return order
 
 
@@ -294,12 +296,14 @@ def fast_targeted_order(ugraph):
 # print "faster target order time = ", time2 - time1
 
 
-# network_graph = load_graph(NETWORK_URL)
-# uer_graph = UER_graph(1347, 0.0034)
-# upa_graph = UPA_graph(1347, 2)
+network_graph = load_graph(NETWORK_URL)
+uer_graph = UER_graph(1347, 0.0034)
+upa_graph = UPA_graph(1347, 2)
 #
 #
-# # Question 1, plot the resilience for all these graph versus number of nodes removed.
+"""
+Question 1, plot the resilience for all these graph versus number of nodes removed.
+"""
 # attack_order = random_order(uer_graph)
 # x_value = range(len(attack_order) + 1)
 # network_res = compute_resilience(network_graph, attack_order)
@@ -315,7 +319,9 @@ def fast_targeted_order(ugraph):
 # plt.legend()
 # plt.show()
 
-# # Question 2, analyze the running time of these two methods on UPA graphs of size n with m=5.
+"""
+Question 3, analyze the running time of these two methods on UPA graphs of size n with m=5.
+"""
 # slow_running_times = []
 # fast_running_times = []
 # for final_num in range(10, 1000, 10):
@@ -336,4 +342,38 @@ def fast_targeted_order(ugraph):
 # plt.ylabel('Running time (unit = second)')
 # plt.title('Comparison of Running time \n for generating target order from UPA graphs  (Desktop Python)')
 # plt.grid()
+# plt.show()
+
+
+"""
+Question 4, continue the analysis of the computer network, and exam its resilience under an attack
+ in which servers are chosen based on their connectivity. Then again compare the resilience of
+ the computer network to that of UER and UPA random graphs of similar size.
+"""
+network_order = fast_targeted_order(network_graph)
+uer_order = fast_targeted_order(uer_graph)
+upa_order = fast_targeted_order(upa_graph)
+network_res = compute_resilience(network_graph, network_order)
+uer_res = compute_resilience(uer_graph, uer_order)
+upa_res = compute_resilience(upa_graph, upa_order)
+plt.plot(network_res, '-b', lw = 2, label = 'Network Graph')
+plt.plot(uer_res, '-r', lw = 2, label='ER Graph (p = 0.0034)')
+plt.plot(upa_res, '-g', lw = 2, label = 'UPA Graph (m = 2)')
+plt.xlabel('The number of nodes removed')
+plt.ylabel('Size of largest connected component after node removal')
+plt.title('The resilience of Network, ER and UPA Graphs \n under a specific attack order')
+plt.grid()
+plt.legend()
+plt.show()
+
+
+# # Compare resilience of UPA graph under different attacks
+# random_attack = random_order(upa_graph)
+# upa_res_random = compute_resilience(upa_graph,random_attack)
+# plt.plot(upa_res_random, 'r', lw = 2, label = 'UPA under random attack')
+# plt.xlabel('The number of nodes removed')
+# plt.ylabel('Size of largest connected component after node removal')
+# plt.title('The resilience of UPA graphs under different attack orders')
+# plt.grid()
+# plt.legend()
 # plt.show()
