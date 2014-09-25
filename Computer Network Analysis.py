@@ -271,17 +271,16 @@ def fast_targeted_order(ugraph):
     for node in temp_ugraph.keys():      # Create the degree_set
         degree = len(temp_ugraph[node])
         degree_sets[degree].add(node)
-    for degree in range(num_nodes- 1, 0, -1):
+    for degree in range(num_nodes- 1, -1, -1):
         while len(degree_sets[degree]) != 0:
             tail = degree_sets[degree].pop()
             for head in temp_ugraph[tail]:
-                degree = len(temp_ugraph[head])
-                degree_sets[degree].remove(head)
-                degree_sets[degree - 1].add(head)
+                head_degree = len(temp_ugraph[head])
+                degree_sets[head_degree].remove(head)
+                degree_sets[head_degree - 1].add(head)
                 temp_ugraph[head].remove(tail)
             temp_ugraph.pop(tail)
             order.append(tail)
-    order.extend(temp_ugraph.keys())
     return order
 
 
@@ -296,9 +295,9 @@ def fast_targeted_order(ugraph):
 # print "faster target order time = ", time2 - time1
 
 
-network_graph = load_graph(NETWORK_URL)
-uer_graph = UER_graph(1347, 0.0034)
-upa_graph = UPA_graph(1347, 2)
+# network_graph = load_graph(NETWORK_URL)
+# uer_graph = UER_graph(1347, 0.0034)
+# upa_graph = UPA_graph(1347, 2)
 #
 #
 """
@@ -322,27 +321,27 @@ Question 1, plot the resilience for all these graph versus number of nodes remov
 """
 Question 3, analyze the running time of these two methods on UPA graphs of size n with m=5.
 """
-# slow_running_times = []
-# fast_running_times = []
-# for final_num in range(10, 1000, 10):
-#     upa_graph = UPA_graph(final_num, 5)
-#     time0 = time.time()
-#     slow_order = targeted_order(upa_graph)
-#     time1 = time.time()
-#     fast_order = fast_targeted_order(upa_graph)
-#     time2 = time.time()
-#     slow_running_times.append(time1 - time0)
-#     fast_running_times.append(time2 - time1)
-# print 'slow', slow_running_times
-# print 'fast', fast_running_times
-# plt.plot(range(10, 1000, 10), slow_running_times, 'r', lw = 2, label = 'Provided target order generation method')
-# plt.plot(range(10, 1000, 10), fast_running_times, 'g', lw = 2, label = 'Fast target order generation method')
-# plt.legend(loc = 'upper left')
-# plt.xlabel('Size of UPA graph n')
-# plt.ylabel('Running time (unit = second)')
-# plt.title('Comparison of Running time \n for generating target order from UPA graphs  (Desktop Python)')
-# plt.grid()
-# plt.show()
+slow_running_times = []
+fast_running_times = []
+for final_num in range(10, 1000, 10):
+    upa_graph = UPA_graph(final_num, 5)
+    time0 = time.time()
+    slow_order = targeted_order(upa_graph)
+    time1 = time.time()
+    fast_order = fast_targeted_order(upa_graph)
+    time2 = time.time()
+    slow_running_times.append(time1 - time0)
+    fast_running_times.append(time2 - time1)
+print 'slow', slow_running_times
+print 'fast', fast_running_times
+plt.plot(range(10, 1000, 10), slow_running_times, 'r', lw = 2, label = 'Provided target order generation method')
+plt.plot(range(10, 1000, 10), fast_running_times, 'g', lw = 2, label = 'Fast target order generation method')
+plt.legend(loc = 'upper left')
+plt.xlabel('Size of UPA graph n')
+plt.ylabel('Running time (unit = second)')
+plt.title('Comparison of Running time \n for generating target order from UPA graphs  (Desktop Python)')
+plt.grid()
+plt.show()
 
 
 """
@@ -350,21 +349,21 @@ Question 4, continue the analysis of the computer network, and exam its resilien
  in which servers are chosen based on their connectivity. Then again compare the resilience of
  the computer network to that of UER and UPA random graphs of similar size.
 """
-network_order = fast_targeted_order(network_graph)
-uer_order = fast_targeted_order(uer_graph)
-upa_order = fast_targeted_order(upa_graph)
-network_res = compute_resilience(network_graph, network_order)
-uer_res = compute_resilience(uer_graph, uer_order)
-upa_res = compute_resilience(upa_graph, upa_order)
-plt.plot(network_res, '-b', lw = 2, label = 'Network Graph')
-plt.plot(uer_res, '-r', lw = 2, label='ER Graph (p = 0.0034)')
-plt.plot(upa_res, '-g', lw = 2, label = 'UPA Graph (m = 2)')
-plt.xlabel('The number of nodes removed')
-plt.ylabel('Size of largest connected component after node removal')
-plt.title('The resilience of Network, ER and UPA Graphs \n under a specific attack order')
-plt.grid()
-plt.legend()
-plt.show()
+# network_order = fast_targeted_order(network_graph)
+# uer_order = fast_targeted_order(uer_graph)
+# upa_order = fast_targeted_order(upa_graph)
+# network_res = compute_resilience(network_graph, network_order)
+# uer_res = compute_resilience(uer_graph, uer_order)
+# upa_res = compute_resilience(upa_graph, upa_order)
+# plt.plot(network_res, '-b', lw = 2, label = 'Network Graph')
+# plt.plot(uer_res, '-r', lw = 2, label='ER Graph (p = 0.0034)')
+# plt.plot(upa_res, '-g', lw = 2, label = 'UPA Graph (m = 2)')
+# plt.xlabel('The number of nodes removed')
+# plt.ylabel('Size of largest connected component after node removal')
+# plt.title('The resilience of Network, ER and UPA Graphs \n under a specific attack order')
+# plt.grid()
+# plt.legend()
+# plt.show()
 
 
 # # Compare resilience of UPA graph under different attacks
@@ -377,3 +376,22 @@ plt.show()
 # plt.grid()
 # plt.legend()
 # plt.show()
+
+# Compare resilience of computer network under vulnerable attack by different order generation method
+# network_order_slow = targeted_order(network_graph)
+# network_res_slow = compute_resilience(network_graph, network_order_slow)
+# plt.plot(network_res_slow, '-r', lw = 2, label = "Slow attack order generator")
+# plt.legend()
+# plt.show()
+
+# test_graph = UER_graph(40, 0.1)
+# print test_graph
+# print test_graph.keys()
+# print map(len, test_graph.values())
+#
+# order1 = targeted_order(test_graph)
+# order2 = fast_targeted_order(test_graph)
+# print len(order1), len(order2)
+# print 'slow:', order1
+# print 'fast:', order2
+# print order1==order2
